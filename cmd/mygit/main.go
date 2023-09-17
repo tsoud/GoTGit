@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"compress/zlib"
 	"flag"
 	"fmt"
@@ -70,20 +71,18 @@ func catFileCmdHandler(pprint *bool, file string) {
 	}
 	defer r.Close()
 
-	if _, err := io.Copy(os.Stdout, r); err != nil {
+	contents := bufio.NewReader(r)
+	// discard header and null byte, print out contents
+	if _, err := contents.ReadBytes(0); err != nil {
+		log.Fatalf("Error reading header of %s: %s", file, err)
+	}
+	if _, err := io.Copy(os.Stdout, contents); err != nil {
 		log.Fatalf("Error reading contents of %s: %s", file, err)
 	}
 }
 
 // Usage: your_git.sh <command> <arg1> <arg2> ...
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
-
-	// if len(os.Args) < 2 {
-	// 	fmt.Fprintf(os.Stderr, "usage: mygit <command> [<args>...]\n")
-	// 	os.Exit(1)
-	// }
 	if len(os.Args) < 2 {
 		log.Fatalf("\nusage: mygit <command> [<args>...]\n\n")
 	}
@@ -93,18 +92,6 @@ func main() {
 		initCmdArgs, quiet := setupInitCommand()
 		initCmdArgs.Parse(os.Args[2:])
 		initCmdHandler(quiet)
-		// for _, dir := range []string{".git", ".git/objects", ".git/refs"} {
-		// 	if err := os.MkdirAll(dir, 0755); err != nil {
-		// 		fmt.Fprintf(os.Stderr, "Error creating directory: %s\n", err)
-		// 	}
-		// }
-
-		// headFileContents := []byte("ref: refs/heads/master\n")
-		// if err := os.WriteFile(".git/HEAD", headFileContents, 0644); err != nil {
-		// 	fmt.Fprintf(os.Stderr, "Error writing file: %s\n", err)
-		// }
-
-		// fmt.Println("Initialized git directory")
 
 	case "cat-file":
 		catFileCmdArgs, pprint := setupCatFileCmd()
