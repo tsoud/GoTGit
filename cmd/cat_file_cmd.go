@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"path"
 )
 
-func setupCatFileCmd() (*flag.FlagSet, *bool) {
+func SetupCatFileCmd() (*flag.FlagSet, *bool) {
 	catFileCmd := flag.NewFlagSet("cat-file", flag.ExitOnError)
 
 	var pprint bool
@@ -19,7 +19,7 @@ func setupCatFileCmd() (*flag.FlagSet, *bool) {
 	return catFileCmd, &pprint
 }
 
-func catFileCmdHandler(pprint *bool, file string) {
+func CatFileCmdHandler(pprint *bool, file string) {
 	if !*pprint {
 		log.Fatalf("Missing flag: `-p`\nThis flag is needed to print contents of <file>.")
 	}
