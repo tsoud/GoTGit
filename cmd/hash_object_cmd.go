@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"compress/zlib"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func setupHashObjectCmd() (*flag.FlagSet, *bool, *string) {
+func SetupHashObjectCmd() (*flag.FlagSet, *bool, *string) {
 	hashObjCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
 
 	var write bool
@@ -27,7 +27,7 @@ func setupHashObjectCmd() (*flag.FlagSet, *bool, *string) {
 }
 
 // TODO: Add functionality for handling non-blob types
-func hashObjectCmdHandler(write *bool, objType *string, file string) {
+func HashObjectCmdHandler(write *bool, objType *string, file string) {
 	f, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("Could not open file: %s\n", err)

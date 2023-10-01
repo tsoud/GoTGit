@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"flag"
@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func setupInitCommand() (*flag.FlagSet, *bool) {
+func SetupInitCommand() (*flag.FlagSet, *bool) {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 
 	var quiet bool
@@ -19,7 +19,7 @@ func setupInitCommand() (*flag.FlagSet, *bool) {
 	return initCmd, &quiet
 }
 
-func initCmdHandler(quiet *bool) {
+func InitCmdHandler(quiet *bool) {
 	for _, dir := range []string{".git", ".git/objects", ".git/refs"} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Printf("Error creating directory: %s\n", err)
