@@ -1,13 +1,10 @@
 package cmd
 
 import (
-	"bufio"
-	"compress/zlib"
 	"flag"
-	"io"
 	"log"
-	"os"
-	"path"
+
+	"github.com/tsoud/GoTGit.git/gitobj"
 )
 
 func SetupCatFileCmd() (*flag.FlagSet, *bool) {
@@ -24,27 +21,12 @@ func CatFileCmdHandler(pprint *bool, file string) {
 		log.Fatalf("Missing flag: `-p`\nThis flag is needed to print contents of <file>.")
 	}
 
-	baseFilePath := ".git/objects/"
-	fullPath := path.Join(baseFilePath, file[:2], file[2:])
-
-	source, err := os.Open(fullPath)
+	objInfo, err := gitobj.GitObjInfoFromHash(file)
 	if err != nil {
-		log.Fatalf("Could not open file: %s", err)
+		log.Fatalf("error reading object %s: %s", file, err)
 	}
-	defer source.Close()
 
-	r, err := zlib.NewReader(source)
-	if err != nil {
-		log.Fatalf("Error when trying to decompress %s: %s", file, err)
-	}
-	defer r.Close()
-
-	contents := bufio.NewReader(r)
-	// discard header and null byte, print out contents
-	if _, err := contents.ReadBytes(0); err != nil {
-		log.Fatalf("Error reading header of %s: %s", file, err)
-	}
-	if _, err := io.Copy(os.Stdout, contents); err != nil {
-		log.Fatalf("Error reading contents of %s: %s", file, err)
+	if err := objInfo.PrintContent(); err != nil {
+		log.Fatalf("%s", err)
 	}
 }
