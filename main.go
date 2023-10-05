@@ -20,7 +20,7 @@ func main() {
 		cmd.InitCmdHandler(quiet)
 
 	case "cat-file":
-		catFileCmdArgs, pprint := cmd.SetupCatFileCmd()
+		catFileCmdArgs := cmd.SetupCatFileCmd()
 		catFileCmdArgs.Parse(os.Args[2:])
 		files := catFileCmdArgs.Args()
 		if len(files) < 1 {
@@ -29,7 +29,7 @@ func main() {
 		if len(files) > 1 {
 			log.Printf("More than one file given.\nOnly showing 1st file %s:", files[0])
 		}
-		cmd.CatFileCmdHandler(pprint, files[0])
+		cmd.CatFileCmdHandler(files[0], catFileCmdArgs)
 
 	case "hash-object":
 		hashObjCmdArgs, write, objType := cmd.SetupHashObjectCmd()
