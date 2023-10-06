@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const GitBaseDir = ".git/objects"
+const GitBaseDir = ".gotgit_test/objects"
 
 type GitObjInfo struct {
 	Hash      string
@@ -91,7 +91,7 @@ func (g *GitObjInfo) PrintContent() error {
 	defer src.Close()
 	defer content.Close()
 
-	buf := make([]byte, g.HeaderLen+1) //[]byte{}
+	buf := make([]byte, g.HeaderLen+1)
 	if _, err := content.Read(buf); err != nil && err != io.EOF {
 		return fmt.Errorf("unable to read object contents: %s", err)
 	}
