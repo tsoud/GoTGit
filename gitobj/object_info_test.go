@@ -80,7 +80,7 @@ func TestProcessObjHeader(t *testing.T) {
 func TestPrintContent(t *testing.T) {
 	testBlob := readTestFile(testBlobFile)
 
-	reHash := regexp.MustCompile(`[a-z\d]{40}`)
+	reHash := regexp.MustCompile(`(?m)^[a-z\d]{40}`)
 	hashes := reHash.FindAllString(testBlob, -1)
 
 	reBody := regexp.MustCompile(`>>>((?:.|\n)*?)<<<`)
