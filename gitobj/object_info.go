@@ -3,6 +3,7 @@ package gitobj
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +24,7 @@ type GitObjInfo struct {
 func GitObjInfoFromHash(hash string) (*GitObjInfo, error) {
 	g := &GitObjInfo{Hash: hash}
 	if err := g.ProcessObjHeader(); err != nil {
-		return nil, fmt.Errorf("%s", err)
+		return nil, err //fmt.Errorf("%s", err)
 	}
 
 	return g, nil
@@ -50,7 +51,7 @@ func (g *GitObjInfo) ProcessObjHeader() error {
 	headerBytes := make([]byte, 128)
 	data, src, err := g.ReadFromFile()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return err //fmt.Errorf("%s", err)
 	}
 
 	n, err := data.Read(headerBytes)
@@ -83,19 +84,96 @@ func (g *GitObjInfo) ProcessObjHeader() error {
 	return nil
 }
 
-func (g *GitObjInfo) PrintContent() error {
+func (g *GitObjInfo) GetContent() (io.ReadCloser, error) {
 	content, src, err := g.ReadFromFile()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return nil, err //fmt.Errorf("%s", err)
 	}
 	defer src.Close()
-	defer content.Close()
+	// defer content.Close()
 
 	buf := make([]byte, g.HeaderLen+1)
 	if _, err := content.Read(buf); err != nil && err != io.EOF {
-		return fmt.Errorf("unable to read object contents: %s", err)
+		return nil, fmt.Errorf("unable to read object contents: %s", err)
 	}
 
+	// io.Copy(os.Stdout, content)
+	return content, nil
+}
+
+func (g *GitObjInfo) PrintContent() error {
+	content, err := g.GetContent()
+	if err != nil {
+		return err //fmt.Errorf("%s", err)
+	}
+	defer content.Close()
+
 	io.Copy(os.Stdout, content)
+	return nil
+}
+
+func (g *GitObjInfo) PrintTreeContent(outputType string) error {
+	content, err := g.GetContent()
+	if err != nil {
+		return err
+	}
+	defer content.Close()
+
+	treeBuf := new(bytes.Buffer)
+	if _, err := io.Copy(treeBuf, content); err != nil {
+		return fmt.Errorf("could not read tree contents: %s", err)
+	}
+
+	var output strings.Builder
+
+	for treeBuf.Len() > 0 {
+		mode, err := treeBuf.ReadString(' ')
+		if err != nil && err != io.EOF {
+			return fmt.Errorf("unable to extract mode: %s", err)
+		}
+		// pad mode string if leading zero is omitted by Git
+		mode = fmt.Sprintf("%06s", mode[:len(mode)-1])
+
+		filename, err := treeBuf.ReadBytes(0)
+		if err != nil {
+			return fmt.Errorf("unable to read filename: %s", err)
+		}
+		filename = filename[:len(filename)-1]
+		if outputType == "name-only" {
+			output.WriteString(fmt.Sprintf("%s\n", string(filename)))
+			// continue
+		}
+
+		sha1Hash := make([]byte, 20)
+		if _, err := treeBuf.Read(sha1Hash); err != nil {
+			return fmt.Errorf("unable to read SHA1 hash: %s", err)
+		}
+
+		objHash := hex.EncodeToString(sha1Hash)
+		gitObj, err := GitObjInfoFromHash(objHash)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		if outputType == "default" {
+			output.WriteString(fmt.Sprintf("%s %s %s\t%s\n", mode, gitObj.Type, gitObj.Hash, filename))
+			// continue
+		}
+
+		size := strconv.Itoa(gitObj.Size)
+		if gitObj.Type == "tree" {
+			size = "-"
+		}
+		// add extra padding for larger sizes if needed
+		width := 7
+		if width < len(size) {
+			width = len(size)
+		}
+		if outputType == "long" || outputType == "l" {
+			output.WriteString(fmt.Sprintf("%s %s %s %*s\t%s\n",
+				mode, gitObj.Type, gitObj.Hash, width, size, filename))
+		}
+	}
+
+	fmt.Print(output.String())
 	return nil
 }

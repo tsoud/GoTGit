@@ -23,7 +23,13 @@ func TestMain(m *testing.M) {
 
 var testBlobFile = "test_blob.txt"
 
-// var testTreeFile = "test_tree.txt"
+var testTreeFiles = map[string]string{
+	"default":   "test_tree.txt",
+	"name-only": "test_tree_nameonly.txt",
+	"long":      "test_tree_long.txt",
+	"l":         "test_tree_long.txt",
+}
+
 // var testCommitFile = "test_commit.txt"
 
 func readTestFile(file string) string {
@@ -110,6 +116,45 @@ func TestPrintContent(t *testing.T) {
 		io.Copy(&buf, r)
 		if res := buf.String(); res != blob[1] {
 			t.Errorf("Wanted:\n%q\n\nGot:\n%q", blob[1], res)
+		}
+	}
+}
+
+func TestPrintTreeContent(t *testing.T) {
+	for outType, testfile := range testTreeFiles {
+		testTree := readTestFile(testfile)
+
+		reHash := regexp.MustCompile(`(?m)^[a-z\d]{40}`)
+		hashes := reHash.FindAllString(testTree, -1)
+
+		reBody := regexp.MustCompile(`>>>((?:.|\n)*?)<<<`)
+		trees := reBody.FindAllStringSubmatch(testTree, -1)
+
+		for i, tree := range trees {
+			tObj, err := GitObjInfoFromHash(hashes[i])
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Capture text from stdout
+			clear := os.Stdout
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			os.Stdout = w
+			err = tObj.PrintTreeContent(outType)
+			if err != nil {
+				t.Fatal(err)
+			}
+			w.Close()
+			os.Stdout = clear
+
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			if res := buf.String(); res != tree[1] {
+				t.Errorf("\nWanted:\n%q\nGot:\n%q\n---\n", tree[1], res)
+			}
 		}
 	}
 }
