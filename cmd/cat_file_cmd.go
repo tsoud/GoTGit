@@ -10,9 +10,9 @@ import (
 	"github.com/tsoud/GoTGit.git/gitobj"
 )
 
-const usageMsg = "Usage: cat-file (-p | -t | -s) <object>\n"
+const CatFileUsageMsg = "usage: cat-file (-p | -t | -s) <object>\n"
 
-func validFlags() []string {
+func validCatFileFlags() []string {
 	return []string{"s", "t", "p"}
 }
 
@@ -29,20 +29,20 @@ func SetupCatFileCmd() *flag.FlagSet {
 	return catFileCmd
 }
 
-func validateFlags(fs *flag.FlagSet) {
+func validateCatFileFlags(fs *flag.FlagSet) {
 	if fs.NFlag() == 0 {
-		log.Fatalf("Missing required flag: `-p`, `-s`, or `-t`.\n%s", usageMsg)
+		log.Fatalf("Missing required flag: `-p`, `-s`, or `-t`.\n%s", CatFileUsageMsg)
 	}
 	if fs.NFlag() > 1 {
 		log.Fatalf(
-			"`cat-file` takes only one flag: `-p`, `-s`, or `-t`.\n%s", usageMsg)
+			"`cat-file` takes only one flag: `-p`, `-s`, or `-t`.\n%s", CatFileUsageMsg)
 	}
 }
 
 func catFileOption(fs *flag.FlagSet) (string, error) {
-	validateFlags(fs)
+	validateCatFileFlags(fs)
 
-	for _, flag := range validFlags() {
+	for _, flag := range validCatFileFlags() {
 		if fs.Lookup(flag).Value.String() == "true" {
 			return flag, nil
 		}

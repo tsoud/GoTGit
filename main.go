@@ -24,7 +24,7 @@ func main() {
 		catFileCmdArgs.Parse(os.Args[2:])
 		files := catFileCmdArgs.Args()
 		if len(files) < 1 {
-			log.Fatal("No file given! Usage: mygit cat-file -p <file>")
+			log.Fatalf("No file given! %s", cmd.CatFileUsageMsg)
 		}
 		if len(files) > 1 {
 			log.Printf("More than one file given.\nOnly showing 1st file %s:", files[0])
@@ -42,6 +42,19 @@ func main() {
 			log.Printf("Found more than one file. Only hashing %s\n", file[0])
 		}
 		cmd.HashObjectCmdHandler(write, objType, file[0])
+
+	case "ls-tree":
+		lsTreeCmdArgs := cmd.SetupLSTreeCmd()
+		lsTreeCmdArgs.Parse(os.Args[2:])
+		file := lsTreeCmdArgs.Args()
+		if len(file) < 1 {
+			log.Fatalf("No file given! %s", cmd.LSTreeUsageMsg)
+		}
+		if len(file) > 1 {
+			log.Printf("Found more than one file. Only displaying %s\n", file[0])
+		}
+
+		cmd.LSTreeCmdHandler(file[0], lsTreeCmdArgs)
 
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
