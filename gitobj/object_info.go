@@ -24,7 +24,7 @@ type GitObjInfo struct {
 func GitObjInfoFromHash(hash string) (*GitObjInfo, error) {
 	g := &GitObjInfo{Hash: hash}
 	if err := g.ProcessObjHeader(); err != nil {
-		return nil, err //fmt.Errorf("%s", err)
+		return nil, err
 	}
 
 	return g, nil
@@ -51,7 +51,7 @@ func (g *GitObjInfo) ProcessObjHeader() error {
 	headerBytes := make([]byte, 128)
 	data, src, err := g.ReadFromFile()
 	if err != nil {
-		return err //fmt.Errorf("%s", err)
+		return err
 	}
 
 	n, err := data.Read(headerBytes)
@@ -87,24 +87,22 @@ func (g *GitObjInfo) ProcessObjHeader() error {
 func (g *GitObjInfo) GetContent() (io.ReadCloser, error) {
 	content, src, err := g.ReadFromFile()
 	if err != nil {
-		return nil, err //fmt.Errorf("%s", err)
+		return nil, err
 	}
 	defer src.Close()
-	// defer content.Close()
 
 	buf := make([]byte, g.HeaderLen+1)
 	if _, err := content.Read(buf); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("unable to read object contents: %s", err)
 	}
 
-	// io.Copy(os.Stdout, content)
 	return content, nil
 }
 
 func (g *GitObjInfo) PrintContent() error {
 	content, err := g.GetContent()
 	if err != nil {
-		return err //fmt.Errorf("%s", err)
+		return err
 	}
 	defer content.Close()
 
@@ -141,7 +139,6 @@ func (g *GitObjInfo) PrintTreeContent(outputType string) error {
 		filename = filename[:len(filename)-1]
 		if outputType == "name-only" {
 			output.WriteString(fmt.Sprintf("%s\n", string(filename)))
-			// continue
 		}
 
 		sha1Hash := make([]byte, 20)
@@ -156,7 +153,6 @@ func (g *GitObjInfo) PrintTreeContent(outputType string) error {
 		}
 		if outputType == "default" {
 			output.WriteString(fmt.Sprintf("%s %s %s\t%s\n", mode, gitObj.Type, gitObj.Hash, filename))
-			// continue
 		}
 
 		size := strconv.Itoa(gitObj.Size)
