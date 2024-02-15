@@ -19,9 +19,8 @@ func SetupLSTreeCmd() *flag.FlagSet {
 	lsTreeCmd := flag.NewFlagSet("cat-file", flag.ExitOnError)
 
 	var long bool
-	usage := "List only filenames (instead of the \"long\" output), one per line."
-	lsTreeCmd.BoolVar(&long, "long", false, usage)
-	lsTreeCmd.BoolVar(&long, "l", false, "(shorthand ver.)"+usage)
+	lsTreeCmd.BoolVar(&long, "long", false, "List object size of blob (file) entries.")
+	lsTreeCmd.BoolVar(&long, "l", false, "(shorthand ver.) List object size of blob (file) entries.")
 	var nameOnly bool
 	lsTreeCmd.BoolVar(&nameOnly, "name-only", false, "List only filenames "+
 		"(instead of the \"long\" output), one per line.")
