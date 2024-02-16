@@ -22,16 +22,16 @@ type GitObjInfo struct {
 }
 
 func GitObjInfoFromHash(hash string) (*GitObjInfo, error) {
-	g := &GitObjInfo{Hash: hash}
-	if err := g.ProcessObjHeader(); err != nil {
+	gitObj := &GitObjInfo{Hash: hash}
+	if err := gitObj.ProcessObjHeader(); err != nil {
 		return nil, err
 	}
 
-	return g, nil
+	return gitObj, nil
 }
 
-func (g *GitObjInfo) ReadFromFile() (io.ReadCloser, *os.File, error) {
-	fullPath := path.Join(GitBaseDir, g.Hash[:2], g.Hash[2:])
+func (gitObj *GitObjInfo) ReadFromFile() (io.ReadCloser, *os.File, error) {
+	fullPath := path.Join(GitBaseDir, gitObj.Hash[:2], gitObj.Hash[2:])
 
 	src, err := os.Open(fullPath)
 	if err != nil {
@@ -41,22 +41,22 @@ func (g *GitObjInfo) ReadFromFile() (io.ReadCloser, *os.File, error) {
 	src_uncmpr, err := zlib.NewReader(src)
 	if err != nil {
 		src.Close()
-		return nil, nil, fmt.Errorf("error decompressing file %s: %s", g.Hash, err)
+		return nil, nil, fmt.Errorf("error decompressing file %s: %s", gitObj.Hash, err)
 	}
 
 	return src_uncmpr, src, nil
 }
 
-func (g *GitObjInfo) ProcessObjHeader() error {
+func (gitObj *GitObjInfo) ProcessObjHeader() error {
 	headerBytes := make([]byte, 128)
-	data, src, err := g.ReadFromFile()
+	data, src, err := gitObj.ReadFromFile()
 	if err != nil {
 		return err
 	}
 
 	n, err := data.Read(headerBytes)
 	if err != nil && err != io.EOF {
-		return fmt.Errorf("error reading header of %s: %s", g.Hash, err)
+		return fmt.Errorf("error reading header of %s: %s", gitObj.Hash, err)
 	}
 	defer src.Close()
 	defer data.Close()
@@ -77,21 +77,21 @@ func (g *GitObjInfo) ProcessObjHeader() error {
 		return fmt.Errorf("error getting object size: %s", err)
 	}
 
-	g.Size = size
-	g.Type = headerParts[0]
-	g.HeaderLen = idx
+	gitObj.Size = size
+	gitObj.Type = headerParts[0]
+	gitObj.HeaderLen = idx
 
 	return nil
 }
 
-func (g *GitObjInfo) GetContent() (io.ReadCloser, error) {
-	content, src, err := g.ReadFromFile()
+func (gitObj *GitObjInfo) GetContent() (io.ReadCloser, error) {
+	content, src, err := gitObj.ReadFromFile()
 	if err != nil {
 		return nil, err
 	}
 	defer src.Close()
 
-	buf := make([]byte, g.HeaderLen+1)
+	buf := make([]byte, gitObj.HeaderLen+1)
 	if _, err := content.Read(buf); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("unable to read object contents: %s", err)
 	}
@@ -99,8 +99,8 @@ func (g *GitObjInfo) GetContent() (io.ReadCloser, error) {
 	return content, nil
 }
 
-func (g *GitObjInfo) PrintContent() error {
-	content, err := g.GetContent()
+func (gitObj *GitObjInfo) PrintContent() error {
+	content, err := gitObj.GetContent()
 	if err != nil {
 		return err
 	}
@@ -110,8 +110,8 @@ func (g *GitObjInfo) PrintContent() error {
 	return nil
 }
 
-func (g *GitObjInfo) PrintTreeContent(outputType string) error {
-	content, err := g.GetContent()
+func (gitObj *GitObjInfo) PrintTreeContent(outputType string) error {
+	content, err := gitObj.GetContent()
 	if err != nil {
 		return err
 	}
@@ -147,16 +147,16 @@ func (g *GitObjInfo) PrintTreeContent(outputType string) error {
 		}
 
 		objHash := hex.EncodeToString(sha1Hash)
-		gitObj, err := GitObjInfoFromHash(objHash)
+		objInfo, err := GitObjInfoFromHash(objHash)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
 		if outputType == "default" {
-			output.WriteString(fmt.Sprintf("%s %s %s\t%s\n", mode, gitObj.Type, gitObj.Hash, filename))
+			output.WriteString(fmt.Sprintf("%s %s %s\t%s\n", mode, objInfo.Type, objInfo.Hash, filename))
 		}
 
-		size := strconv.Itoa(gitObj.Size)
-		if gitObj.Type == "tree" {
+		size := strconv.Itoa(objInfo.Size)
+		if objInfo.Type == "tree" {
 			size = "-"
 		}
 		// add extra padding for larger sizes if needed
@@ -166,7 +166,7 @@ func (g *GitObjInfo) PrintTreeContent(outputType string) error {
 		}
 		if outputType == "long" || outputType == "l" {
 			output.WriteString(fmt.Sprintf("%s %s %s %*s\t%s\n",
-				mode, gitObj.Type, gitObj.Hash, width, size, filename))
+				mode, objInfo.Type, objInfo.Hash, width, size, filename))
 		}
 	}
 
