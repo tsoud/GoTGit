@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -11,10 +10,6 @@ import (
 )
 
 const CatFileUsageMsg = "usage: cat-file (-p | -t | -s) <object>\n"
-
-func validCatFileFlags() []string {
-	return []string{"s", "t", "p"}
-}
 
 func SetupCatFileCmd() *flag.FlagSet {
 	catFileCmd := flag.NewFlagSet("cat-file", flag.ExitOnError)
@@ -29,53 +24,53 @@ func SetupCatFileCmd() *flag.FlagSet {
 	return catFileCmd
 }
 
-func validateCatFileFlags(fs *flag.FlagSet) {
+func validateCatFileFlags(fs *flag.FlagSet) error {
 	if fs.NFlag() == 0 {
-		log.Fatalf("Missing required flag: `-p`, `-s`, or `-t`.\n%s", CatFileUsageMsg)
+		return fmt.Errorf("missing required flag: `-p`, `-s`, or `-t`.\n%s", CatFileUsageMsg)
 	}
 	if fs.NFlag() > 1 {
-		log.Fatalf(
+		return fmt.Errorf(
 			"`cat-file` takes only one flag: `-p`, `-s`, or `-t`.\n%s", CatFileUsageMsg)
 	}
+
+	return nil
 }
 
-func catFileOption(fs *flag.FlagSet) (string, error) {
-	validateCatFileFlags(fs)
-
-	for _, flag := range validCatFileFlags() {
+func catFileOption(fs *flag.FlagSet) string {
+	// Return a valid option for formatting output from the `cat-file` command.
+	for _, flag := range []string{"s", "t", "p"} {
 		if fs.Lookup(flag).Value.String() == "true" {
-			return flag, nil
+			return flag
 		}
 	}
 
-	return "", errors.New("invalid option")
+	return ""
 }
 
-func CatFileCmdHandler(file string, fs *flag.FlagSet) {
-	fs.Parse(os.Args[2:])
-
-	infoType, err := catFileOption(fs)
+func catFile(objHash, outType string) {
+	objInfo, err := gitobj.ReadGitObj(objHash)
 	if err != nil {
-		log.Fatalf("%s", err)
+		log.Fatalf("error reading object %s: %s", objHash, err)
 	}
 
-	catFile(file, infoType)
-}
-
-func catFile(file, infoType string) {
-	objInfo, err := gitobj.GitObjInfoFromHash(file)
-	if err != nil {
-		log.Fatalf("error reading object %s: %s", file, err)
-	}
-
-	switch infoType {
+	switch outType {
 	case "t":
 		fmt.Printf("%s\n", objInfo.Type)
 	case "s":
 		fmt.Printf("%d\n", objInfo.Size)
 	case "p":
-		if err := objInfo.PrintContent(); err != nil {
-			log.Fatalf("%s", err)
+		if err := gitobj.PrintBlob(objInfo); err != nil {
+			log.Fatal(err)
 		}
 	}
+}
+
+func CatFileCmdHandler(objHash string, fs *flag.FlagSet) {
+	fs.Parse(os.Args[2:])
+	if err := validateCatFileFlags(fs); err != nil {
+		log.Fatal(err)
+	}
+
+	outType := catFileOption(fs)
+	catFile(objHash, outType)
 }

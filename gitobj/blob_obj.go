@@ -1,65 +1,44 @@
 package gitobj
 
 import (
-	"compress/zlib"
 	"crypto/sha1"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"path"
 	"strings"
 )
 
-type BlobObj struct {
-	Hash   string
-	Header string
-	Body   []byte
-}
-
-func HashBlob(file string) (*BlobObj, error) {
-	blobObj := &BlobObj{}
+func HashBlob(file string) (*GitObject, error) {
+	// Create a blob object from a file.
+	blobObj := &GitObject{}
 	f, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("Could not open file: %s\n", err)
 	}
 	defer f.Close()
 
-	// Read the filesize and create the header
+	// Read the file size and create the header.
 	info, err := f.Stat()
 	if err != nil {
-		log.Fatalf("Could not create header. Error getting file information: %s\n", err)
+		return nil, fmt.Errorf("could not create header - error getting file information: %s", err)
 	}
-	blobObj.Header = fmt.Sprintf("blob %d\u0000", info.Size())
 
-	// Prepend the header to the file contents and get the SHA1 sum
-	store := io.MultiReader(strings.NewReader(blobObj.Header), f)
-	blobObj.Body, err = io.ReadAll(store)
+	// Process blob information:
+	blobObj.Name = info.Name()
+	blobObj.Type = "blob"
+	blobObj.Mode = GetObjectMode(info.Mode().String())
+	blobObj.Size = int(info.Size())
+	header := fmt.Sprintf("%s %d\u0000", blobObj.Type, blobObj.Size)
+
+	// prepend the header to the file contents to get SHA1 sum
+	store := io.MultiReader(strings.NewReader(header), f)
+	blobObj.Content, err = io.ReadAll(store)
 	if err != nil {
-		log.Fatalf("Error reading contents of %s: %s\n", file, err)
+		return nil, fmt.Errorf("error reading contents of %s: %s", file, err)
 	}
 
-	blobObj.Hash = fmt.Sprintf("%x", sha1.Sum(blobObj.Body))
+	blobObj.Hash = fmt.Sprintf("%x", sha1.Sum(blobObj.Content))
 
 	return blobObj, nil
-}
-
-func (blob *BlobObj) WriteBlob() {
-	dstDirPath := path.Join(GitBaseDir, blob.Hash[:2])
-	if err := os.MkdirAll(dstDirPath, 0755); err != nil {
-		log.Fatalf("Error creating object subdirectory in .git: %s\n", err)
-	}
-	dstFilePath := path.Join(dstDirPath, blob.Hash[2:])
-	dst, err := os.Create(dstFilePath)
-	if err != nil {
-		log.Fatalf("Could not create object file: %s\n", err)
-	}
-	defer dst.Close()
-
-	compressed := zlib.NewWriter(dst)
-	defer compressed.Close()
-
-	if _, err := compressed.Write(blob.Body); err != nil {
-		log.Fatalf("Could not compress object: %s\n", err)
-	}
 }
