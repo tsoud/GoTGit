@@ -55,7 +55,7 @@ func lsTreeOption(fs *flag.FlagSet) (string, error) {
 	return "", fmt.Errorf("invalid option - %s", LSTreeUsageMsg)
 }
 
-func LSTreeCmdHandler(file string, fs *flag.FlagSet) {
+func LSTreeCmdHandler(objHash string, fs *flag.FlagSet) {
 	fs.Parse(os.Args[2:])
 
 	outputType, err := lsTreeOption(fs)
@@ -63,14 +63,12 @@ func LSTreeCmdHandler(file string, fs *flag.FlagSet) {
 		log.Fatal(err)
 	}
 
-	treeObj, err := gitobj.GitObjInfoFromHash(file)
+	treeObj, err := gitobj.ReadGitObj(objHash)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if treeObj.Type != "tree" {
-		log.Fatalf("fatal: %s is not a tree object", file)
+	if err := gitobj.PrintTree(treeObj, outputType); err != nil {
+		log.Fatal(err)
 	}
-
-	treeObj.PrintTreeContent(outputType)
 }

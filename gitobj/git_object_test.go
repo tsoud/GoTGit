@@ -30,8 +30,6 @@ var testTreeFiles = map[string]string{
 	"l":         "test_tree_long.txt",
 }
 
-// var testCommitFile = "test_commit.txt"
-
 func readTestFile(file string) string {
 	contents, err := os.ReadFile(file)
 	if err != nil {
@@ -69,12 +67,12 @@ func TestProcessObjHeader(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		gotObj, err := GitObjInfoFromHash(test.objHash)
+		gotObj, err := ReadGitObj(test.objHash)
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Run(test.testName, func(t *testing.T) {
-			gotObj.ProcessObjHeader()
+			// gotObj.ProcessObjHeader()
 			if gotObj.Type != test.wantObjType || gotObj.Size != test.wantObjSize {
 				t.Errorf("Wanted type: %q and size: %q, got %q and %q",
 					test.wantObjType, test.wantObjSize, gotObj.Type, gotObj.Size)
@@ -83,7 +81,7 @@ func TestProcessObjHeader(t *testing.T) {
 	}
 }
 
-func TestPrintContent(t *testing.T) {
+func TestPrintBlob(t *testing.T) {
 	testBlob := readTestFile(testBlobFile)
 
 	reHash := regexp.MustCompile(`(?m)^[a-z\d]{40}`)
@@ -93,7 +91,7 @@ func TestPrintContent(t *testing.T) {
 	blobs := reBody.FindAllStringSubmatch(testBlob, -1)
 
 	for i, blob := range blobs {
-		bObj, err := GitObjInfoFromHash(hashes[i])
+		bObj, err := ReadGitObj(hashes[i])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -105,7 +103,7 @@ func TestPrintContent(t *testing.T) {
 			t.Fatal(err)
 		}
 		os.Stdout = w
-		err = bObj.PrintContent()
+		err = PrintBlob(bObj) //bObj.PrintContent()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -131,7 +129,7 @@ func TestPrintTreeContent(t *testing.T) {
 		trees := reBody.FindAllStringSubmatch(testTree, -1)
 
 		for i, tree := range trees {
-			tObj, err := GitObjInfoFromHash(hashes[i])
+			tObj, err := ReadGitObj(hashes[i])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -143,7 +141,7 @@ func TestPrintTreeContent(t *testing.T) {
 				t.Fatal(err)
 			}
 			os.Stdout = w
-			err = tObj.PrintTreeContent(outType)
+			err = PrintTree(tObj, outType)
 			if err != nil {
 				t.Fatal(err)
 			}
