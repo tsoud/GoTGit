@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"testing"
 )
@@ -23,6 +24,11 @@ func TestMain(m *testing.M) {
 
 var testBlobFile = "test_blob.txt"
 
+var testHashBlob = map[string]string{
+	"test_file1.txt": "6e28ca68a7bc6892f3009ecdf2054cf9a5c95cf8",
+	"test_file2.txt": "3a96e10471b1c6842c5cba71a5629bb107ac18b1",
+}
+
 var testTreeFiles = map[string]string{
 	"default":   "test_tree.txt",
 	"name-only": "test_tree_nameonly.txt",
@@ -36,6 +42,19 @@ func readTestFile(file string) string {
 		log.Fatal(err)
 	}
 	return string(contents)
+}
+
+func TestHashBlob(t *testing.T) {
+	testFilePath := path.Dir("..")
+	for file, hash := range testHashBlob {
+		bObj, err := HashBlob(path.Join(testFilePath, file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bObj.Hash != hash {
+			t.Errorf("\nWanted:\n%q\nGot:\n%q\n---\n", hash, bObj.Hash)
+		}
+	}
 }
 
 func TestProcessObjHeader(t *testing.T) {
