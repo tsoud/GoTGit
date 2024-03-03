@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-const GitBaseDir = ".gotgit_test/objects"
+const GitObjectDir = ".gotgit_test/objects"
 
 type GitObject struct {
 	Hash    string
@@ -49,7 +49,7 @@ func typeIsValid(objType string) bool {
 
 func ReadGitObj(objectHash string) (*GitObject, error) {
 	// Read the object type and contents from a given hash.
-	fullPath := path.Join(GitBaseDir, objectHash[:2], objectHash[2:])
+	fullPath := path.Join(GitObjectDir, objectHash[:2], objectHash[2:])
 
 	src, err := os.Open(fullPath)
 	if err != nil {
@@ -72,7 +72,7 @@ func ReadGitObj(objectHash string) (*GitObject, error) {
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("error reading header of %s: %s", objectHash, err)
 	}
-	// Drop the null byte.
+	// Drop the null byte at the end of the header.
 	header := string(headerBytes[:len(headerBytes)-1])
 	// Object headers should have the format "<object type> <size>".
 	headerParts := strings.Split(header, " ")
@@ -127,7 +127,7 @@ func PrintTree(gitobj *GitObject, outputType string) error {
 		if err != nil && err != io.EOF {
 			return fmt.Errorf("unable to extract mode: %s", err)
 		}
-		// pad mode string if leading zero is omitted by Git
+		// Pad mode string if leading zero is omitted by Git.
 		mode = fmt.Sprintf("%06s", mode[:len(mode)-1])
 
 		objName, err := treeBuf.ReadBytes(0)
@@ -150,21 +150,24 @@ func PrintTree(gitobj *GitObject, outputType string) error {
 			return fmt.Errorf("%s", err)
 		}
 		if outputType == "default" {
-			output.WriteString(fmt.Sprintf("%s %s %s\t%s\n", mode, objInfo.Type, objInfo.Hash, objName))
+			output.WriteString(fmt.Sprintf(
+				"%s %s %s\t%s\n", mode, objInfo.Type, objInfo.Hash, objName,
+			))
 		}
 
 		size := strconv.Itoa(objInfo.Size)
 		if objInfo.Type == "tree" {
 			size = "-"
 		}
-		// add extra padding for larger sizes if needed
+		// Add extra padding for larger sizes if needed.
 		width := 7
 		if width < len(size) {
 			width = len(size)
 		}
 		if outputType == "long" || outputType == "l" {
-			output.WriteString(fmt.Sprintf("%s %s %s %*s\t%s\n",
-				mode, objInfo.Type, objInfo.Hash, width, size, objName))
+			output.WriteString(fmt.Sprintf(
+				"%s %s %s %*s\t%s\n", mode, objInfo.Type, objInfo.Hash, width, size, objName,
+			))
 		}
 	}
 
@@ -172,12 +175,12 @@ func PrintTree(gitobj *GitObject, outputType string) error {
 	return nil
 }
 
-func (blob *GitObject) Write() error {
-	dstDirPath := path.Join(GitBaseDir, blob.Hash[:2])
+func (object *GitObject) Write() error {
+	dstDirPath := path.Join(GitObjectDir, object.Hash[:2])
 	if err := os.MkdirAll(dstDirPath, 0755); err != nil {
 		return fmt.Errorf("error creating object subdirectory in .git: %s", err)
 	}
-	dstFilePath := path.Join(dstDirPath, blob.Hash[2:])
+	dstFilePath := path.Join(dstDirPath, object.Hash[2:])
 	dst, err := os.Create(dstFilePath)
 	if err != nil {
 		return fmt.Errorf("could not create object file: %s", err)
@@ -187,7 +190,7 @@ func (blob *GitObject) Write() error {
 	compressed := zlib.NewWriter(dst)
 	defer compressed.Close()
 
-	if _, err := compressed.Write(blob.Content); err != nil {
+	if _, err := compressed.Write(object.Content); err != nil {
 		return fmt.Errorf("could not compress object: %s", err)
 	}
 
