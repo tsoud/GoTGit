@@ -2,4 +2,3 @@ test*.txt
 .gotgit_test/*
 notes/*
 scratch/*
-test_directory/*
