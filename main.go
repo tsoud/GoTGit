@@ -56,6 +56,14 @@ func main() {
 
 		cmd.LSTreeCmdHandler(file[0], lsTreeCmdArgs)
 
+	case "write-tree":
+		writeTreeCmdArgs, ignore, prefix := cmd.SetupWriteTreeCmd()
+		writeTreeCmdArgs.Parse(os.Args[2:])
+
+		if err := cmd.WriteTreeCmdHandler(ignore, prefix, writeTreeCmdArgs); err != nil {
+			log.Fatal(err)
+		}
+
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
