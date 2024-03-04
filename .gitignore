@@ -1,5 +1,7 @@
 test*.txt
 .gotgit_test/*
+.gotgit/*
+.gotgit*
 notes/*
 scratch/*
 test_directory/*
