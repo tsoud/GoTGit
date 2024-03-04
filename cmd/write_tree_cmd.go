@@ -44,9 +44,8 @@ func WriteTreeCmdHandler(ignore *bool, prefix *string, flags *flag.FlagSet) erro
 		if _, err := os.Stat(ignoreFile); err != nil {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("no valid `.gotgitignore` file found in %s", rootDir)
-			} else {
-				return fmt.Errorf("error reading `.gotgitignore`: %s", err)
 			}
+			return fmt.Errorf("error reading `.gotgitignore`: %s", err)
 		}
 	}
 
@@ -55,9 +54,8 @@ func WriteTreeCmdHandler(ignore *bool, prefix *string, flags *flag.FlagSet) erro
 		if _, err := os.Stat(rootDir); err != nil {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("subdirectory: %s does not exist", rootDir)
-			} else {
-				return fmt.Errorf("error processing %s: %s", rootDir, err)
 			}
+			return fmt.Errorf("error processing %s: %s", rootDir, err)
 		}
 	}
 
